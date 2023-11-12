@@ -1,0 +1,30 @@
+---
+- name: Install nginx
+  hosts: nginx
+  remote_user: vagrant
+  become: true
+  vars:
+    nginx_listen_port: 8080
+  tasks:
+    - name: Install nginx package
+      ansible.builtin.package:
+        name: nginx
+        state: present
+      notify: Restart nginx
+    - name: NGINX | Create NGINX config file from template
+      ansible.builtin.template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/conf.d/nginx.conf
+        mode: '0644'
+      notify: Reload nginx
+
+  handlers:
+    - name: Restart nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: restarted
+        enabled: true
+    - name: Reload nginx
+      ansible.builtin.systemd:
+        name: nginx
+        state: reloaded
