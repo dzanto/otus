@@ -189,6 +189,7 @@ otus  feature@zstd_compress          disabled                       local
 
 
 Восстановим файловую систему из снапшота
+
     zfs receive otus/test@today < otus_task2.file
 
 Найдем файл
