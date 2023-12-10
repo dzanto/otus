@@ -1,0 +1,27 @@
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'virtualbox'
+
+box_name = "oraclelinux/8"
+box_url = "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/8.json"
+
+MACHINES = {
+  :server => {
+    :script_path => "server.sh"
+  },
+}
+
+Vagrant.configure("2") do |config|
+
+    MACHINES.each do |boxname, boxconfig|
+
+        config.vm.define boxname do |box|
+
+            box.vm.box = box_name
+            box.vm.box_url = box_url
+            box.vm.host_name = boxname.to_s
+            box.vm.provider :virtualbox do |vb|
+                vb.customize ["modifyvm", :id, "--memory", "4096", "--cpus", "8"]
+            end
+ 	          # box.vm.provision "shell", path: boxconfig[:script_path]
+        end
+    end
+end
