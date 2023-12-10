@@ -1,0 +1,50 @@
+ENV['VAGRANT_DEFAULT_PROVIDER'] = 'virtualbox'
+
+box_name = "oraclelinux/7"
+box_url = "https://oracle.github.io/vagrant-projects/boxes/oraclelinux/7.json"
+
+MACHINES = {
+  :nfss => {
+    :ip_addr => '192.168.56.10',
+    :shell => <<-SHELL
+      sudo yum install -y nfs-utils
+      sudo systemctl enable firewalld --now
+      sudo firewall-cmd --add-service="nfs3" --add-service="rpc-bind" --add-service="mountd" --permanent
+      sudo firewall-cmd --reload
+      sudo systemctl enable nfs --now
+      sudo mkdir -p /srv/share/upload 
+      sudo chown -R nfsnobody:nfsnobody /srv/share 
+      sudo chmod 0777 /srv/share/upload
+      echo "/srv/share 192.168.56.11/32(rw,sync,root_squash)" | sudo tee /etc/exports
+      sudo exportfs -r
+      SHELL
+  },
+  :nfsc => {
+    :ip_addr => '192.168.56.11',
+    :shell => <<-SHELL
+      sudo yum install -y nfs-utils
+      sudo systemctl enable firewalld --now
+      echo "192.168.56.10:/srv/share/ /mnt nfs vers=3,proto=udp,noauto,x-systemd.automount 0 0" | sudo tee -a /etc/fstab
+      sudo systemctl daemon-reload
+      sudo systemctl restart remote-fs.target
+      SHELL
+  },
+}
+
+Vagrant.configure("2") do |config|
+
+    MACHINES.each do |boxname, boxconfig|
+
+        config.vm.define boxname do |box|
+
+            box.vm.box = box_name
+            box.vm.box_url = box_url
+            box.vm.host_name = boxname.to_s
+            box.vm.network "private_network", ip: boxconfig[:ip_addr]
+            box.vm.provider :virtualbox do |vb|
+                vb.customize ["modifyvm", :id, "--memory", "2048", "--cpus", "4"]
+            end
+ 	        box.vm.provision "shell", inline: boxconfig[:shell]
+        end
+    end
+end
